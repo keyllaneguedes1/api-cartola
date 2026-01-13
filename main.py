@@ -1,12 +1,27 @@
 from fastapi import FastAPI
 from typing import Optional
 import pandas as pd
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="API Brasileirão 2025", version="1.0")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"], 
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Carregar os dados
-df = pd.read_json("dados_processados_cartola.json")
-acumulado = pd.read_json("dados_processados_cartola_acumulado.json")
+try:
+    df = pd.read_json("dados_processados_cartola.json")
+    acumulado = pd.read_json("dados_processados_cartola_acumulado.json")
+except Exception as e:
+    print("Erro ao carregar dados:", e)
+    df = pd.DataFrame()
+    acumulado = pd.DataFrame()
+
 
 # Helper para filtros
 def _filtrar(d, clube: Optional[str], posicao: Optional[str], rodada: Optional[int]):
@@ -34,8 +49,9 @@ def listar_jogadores(clube: Optional[str] = None, posicao: Optional[str] = None,
         dados = dados[dados["clube"] == clube]
     if posicao:
         dados = dados[dados["Posição"] == posicao]
-    if nome:
-        dados = dados[dados["atletas.apelido"].str.contains(nome, case=False)]
+    if nome and "atletas.apelido" in dados.columns:
+        dados = dados[dados["atletas.apelido"].str.contains(nome, case=False, na=False)]
+
     return dados.to_dict(orient="records")
 
 @app.get("/jogadores/{id_jogador}")
@@ -47,14 +63,6 @@ def jogador_info(id_jogador: int):
 def jogador_rodadas(id_jogador: int, limite: int = 5):
     dados = df[df["atletas.atleta_id"] == id_jogador].sort_values("atletas.rodada_id", ascending=False)
     return dados.head(limite).to_dict(orient="records")
-
-"""@app.get("/ranking/rodada")
-def ranking_rodada(rodada: int, posicao: Optional[str] = None, limite: int = 10):
-    dados = df[df["atletas.rodada_id"] == rodada]
-    if posicao:
-        dados = dados[dados["Posição"] == posicao]
-    ranking = dados.sort_values("pontos_fantasy", ascending=False).head(limite)
-    return ranking.to_dict(orient="records")"""
 
 @app.get("/ranking/rodada")
 def ranking_rodada(rodada: int, posicao: Optional[str] = None, limite: int = 10):
