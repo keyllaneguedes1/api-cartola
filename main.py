@@ -212,3 +212,44 @@ def jogador_scouts_detalhado(id_jogador: int):
         "total_rodadas": total_rodadas,
         "posicao": dados_jogador.iloc[0]["Posição"] if "Posição" in dados_jogador.columns else None
     }
+
+@app.get("/buscar")
+def buscar_jogador(q: str):
+        """Busca simples por nome de jogador"""
+        
+        if len(q) < 2:
+            return []
+        
+        try:
+            # Garantir que temos dados
+            if acumulado.empty:
+                return []
+            
+            # Verificar se a coluna existe
+            if "atletas.apelido" not in acumulado.columns:
+                print("ERRO: Coluna 'atletas.apelido' não existe!")
+                print(f"Colunas disponíveis: {acumulado.columns.tolist()}")
+                return []
+            
+            # Buscar
+            resultados = acumulado[
+                acumulado["atletas.apelido"].astype(str).str.contains(q, case=False, na=False)
+            ]
+            
+            # Formatar resposta
+            jogadores = []
+            for _, row in resultados.iterrows():
+                jogadores.append({
+                    "id": int(row["atletas.atleta_id"]),
+                    "apelido": str(row["atletas.apelido"]),
+                    "posicao": str(row["Posição"]),
+                    "clube": str(row.get("clube", "")),
+                    "preco": float(row.get("preco", 0)),
+                    "pontos": float(row.get("pontos_fantasy", 0))
+                })
+            
+            return jogadores
+            
+        except Exception as e:
+            print(f"Erro na busca: {e}")
+            return []
