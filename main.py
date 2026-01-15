@@ -15,12 +15,10 @@ app.add_middleware(
 
 # Carregar os dados
 try:
-    processados = pd.read_json("dados_processados_cartola.json") 
-    acumulado = pd.read_json("dados_processados_cartola_acumulado.json")
-    df = processados.copy()  
+    df = pd.read_json("dados_processados_cartola.json") 
+    acumulado = pd.read_json("dados_processados_cartola_acumulado.json")  
 except Exception as e:
     print("Erro ao carregar dados:", e)
-    processados = pd.DataFrame()
     acumulado = pd.DataFrame()
     df = pd.DataFrame()
 
@@ -60,22 +58,7 @@ def listar_jogadores(clube: Optional[str] = None, posicao: Optional[str] = None,
 @app.get("/jogadores/{id_jogador}")
 def jogador_info(id_jogador: int):
     dados = acumulado[acumulado["atletas.atleta_id"] == id_jogador]
-    if dados.empty:
-        return {"erro": "Jogador não encontrado"}
-    
-    
-    clube_nome_df = processados[processados["atletas.atleta_id"] == id_jogador]
-    clube_nome = None if clube_nome_df.empty else clube_nome_df.iloc[0]["atletas.clube.id.full.name"]
-    
-    return {
-        "id": id_jogador,
-        "apelido": dados.iloc[0]["atletas.apelido"],
-        "posicao": dados.iloc[0]["Posição"],
-        "clube": clube_nome,
-        "pontos": float(dados["pontos_fantasy"].sum()),
-        "media": float(dados["pontos_fantasy"].mean()),
-        "rodadas": len(dados)
-    }
+    return dados.to_dict(orient="records")
 
 @app.get("/jogadores/{id_jogador}/rodadas")
 def jogador_rodadas(id_jogador: int, limite: int = 5):
