@@ -172,8 +172,42 @@ def evolucao_top3(limite_rodadas: int = 5):
     dados = df[df["atletas.atleta_id"].isin(top3)].sort_values("atletas.rodada_id", ascending=True)
     return dados[["atletas.apelido","atletas.rodada_id","pontos_fantasy"]].to_dict(orient="records")
 
-@app.get("/jogadores/{id_jogador}/scouts")
-def jogador_scouts(id_jogador: int):
-    dados = df[df["atletas.atleta_id"] == id_jogador]
-    scouts_totais = dados[["G", "A", "DS", "FC", "FS", "FD", "FT", "DE", "DP", "SG"]].sum().to_dict()
-    return scouts_totais
+@app.get("/jogadores/{id_jogador}/scouts-detalhado")
+def jogador_scouts_detalhado(id_jogador: int):
+    dados_jogador = df[df["atletas.atleta_id"] == id_jogador]
+    
+    if dados_jogador.empty:
+        return {"erro": "Jogador não encontrado"}
+    
+    total_rodadas = len(dados_jogador)
+    
+    # Totais
+    totais = {
+        "G": int(dados_jogador["G"].sum()),
+        "A": int(dados_jogador["A"].sum()),
+        "DS": int(dados_jogador["DS"].sum()),
+        "FC": int(dados_jogador["FC"].sum()),
+        "FS": int(dados_jogador["FS"].sum()),
+        "FD": int(dados_jogador["FD"].sum()),
+        "FT": int(dados_jogador["FT"].sum()),
+        "DE": int(dados_jogador["DE"].sum()),
+        "DP": int(dados_jogador["DP"].sum()),
+        "SG": int(dados_jogador["SG"].sum()),
+    }
+    
+    # Médias por rodada
+    medias = {f"{k}_media": v/total_rodadas for k, v in totais.items()}
+    
+    # Percentual de jogos com contribuição
+    percentuais = {}
+    for scout in ["G", "A", "DS"]:
+        jogos_com_scout = len(dados_jogador[dados_jogador[scout] > 0])
+        percentuais[f"{scout}_frequencia"] = f"{(jogos_com_scout/total_rodadas)*100:.1f}%"
+    
+    return {
+        "totais": totais,
+        "medias": medias,
+        "percentuais": percentuais,
+        "total_rodadas": total_rodadas,
+        "posicao": dados_jogador.iloc[0]["Posição"] if "Posição" in dados_jogador.columns else None
+    }
