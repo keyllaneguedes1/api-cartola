@@ -57,7 +57,19 @@ def listar_jogadores(clube: Optional[str] = None, posicao: Optional[str] = None,
 @app.get("/jogadores/{id_jogador}")
 def jogador_info(id_jogador: int):
     dados = acumulado[acumulado["atletas.atleta_id"] == id_jogador]
-    return dados.to_dict(orient="records")
+    if dados.empty:
+        return {"erro": "Jogador não encontrado"}
+    
+    return {
+        "id": id_jogador,
+        "apelido": dados.iloc[0]["atletas.apelido"],
+        "posicao": dados.iloc[0]["Posição"],
+        "clube": dados.iloc[0]["clube"],
+        "pontos": float(dados["pontuacao"].sum()),
+        "media": float(dados["pontuacao"].mean()),
+        "rodadas": len(dados)
+    }
+
 
 @app.get("/jogadores/{id_jogador}/rodadas")
 def jogador_rodadas(id_jogador: int, limite: int = 5):
