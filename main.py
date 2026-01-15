@@ -172,3 +172,8 @@ def evolucao_top3(limite_rodadas: int = 5):
     dados = df[df["atletas.atleta_id"].isin(top3)].sort_values("atletas.rodada_id", ascending=True)
     return dados[["atletas.apelido","atletas.rodada_id","pontos_fantasy"]].to_dict(orient="records")
 
+@app.get("/jogadores/{id_jogador}/scouts")
+def jogador_scouts(id_jogador: int):
+    dados = df[df["atletas.atleta_id"] == id_jogador]
+    scouts_totais = dados[["G", "A", "DS", "FC", "FS", "FD", "FT", "DE", "DP", "SG"]].sum().to_dict()
+    return scouts_totais
